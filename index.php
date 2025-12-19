@@ -726,97 +726,86 @@ echo 'penggunaan peminjaman koleksi.';
 echo '</div>';
 
 if (!$include_renewal) {
-    // Query tanpa perpanjangan
+    // Query tanpa perpanjangan (MySQL 5.6 compatible)
     $sql_b211 = <<<SQL
-WITH 
-HitungPinjaman AS (
-    SELECT 
-        COUNT(1) AS TotalPinjaman
-    FROM loan AS l 
-    INNER JOIN item AS i ON l.item_code=i.item_code
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-    WHERE l.loan_date LIKE ?
-),
-HitungEksemplar AS (
-    SELECT 
-    COUNT(1) AS TotalEksemplar
-    FROM item AS i 
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-),
-HitungJudul AS (
-    SELECT 
-    COUNT(1) AS TotalJudul
-    FROM biblio AS b 
-    WHERE b.biblio_id IN (
-        SELECT DISTINCT i.biblio_id
-        FROM item AS i
-    )
-)
 SELECT
     'Peminjaman' AS Indikator
-    , (SELECT TotalPinjaman FROM HitungPinjaman) AS Total
-    , (SELECT TotalEksemplar FROM HitungEksemplar) AS TotalEksemplar
-    , ROUND(((SELECT TotalPinjaman FROM HitungPinjaman)/
-        (SELECT TotalEksemplar FROM HitungEksemplar)), 2) AS NilaiThdEksemplar
-    , (SELECT TotalJudul FROM HitungJudul) AS TotalJudul
-    , ROUND(((SELECT TotalPinjaman FROM HitungPinjaman)/
-        (SELECT TotalJudul FROM HitungJudul)), 2) AS NilaiThdJudul
+    , hp.TotalPinjaman AS Total
+    , he.TotalEksemplar AS TotalEksemplar
+    , ROUND((hp.TotalPinjaman / he.TotalEksemplar), 2) AS NilaiThdEksemplar
+    , hj.TotalJudul AS TotalJudul
+    , ROUND((hp.TotalPinjaman / hj.TotalJudul), 2) AS NilaiThdJudul
+FROM 
+    (SELECT COUNT(1) AS TotalPinjaman
+     FROM loan AS l 
+     INNER JOIN item AS i ON l.item_code=i.item_code
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
+     WHERE l.loan_date LIKE ?) AS hp
+CROSS JOIN
+    (SELECT COUNT(1) AS TotalEksemplar
+     FROM item AS i 
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id) AS he
+CROSS JOIN
+    (SELECT COUNT(1) AS TotalJudul
+     FROM biblio AS b 
+     WHERE b.biblio_id IN (
+         SELECT DISTINCT i.biblio_id
+         FROM item AS i
+     )) AS hj
 SQL;
 } else {
-    // Query dengan perpanjangan
+    // Query dengan perpanjangan (MySQL 5.6 compatible)
     $sql_b211 = <<<SQL
-WITH 
-HitungPerpanjangan AS (
-    SELECT 
-        COUNT(1) AS TotalPerpanjangan
-    FROM loan AS l 
-    INNER JOIN item AS i ON l.item_code=i.item_code
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-    WHERE l.loan_date LIKE ?
-        AND l.renewed > 0
-),
-HitungPinjaman AS (
-    SELECT 
-        COUNT(1) AS TotalPinjaman
-    FROM loan AS l 
-    INNER JOIN item AS i ON l.item_code=i.item_code
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-    WHERE l.loan_date LIKE ?
-),
-HitungEksemplar AS (
-    SELECT 
-    COUNT(1) AS TotalEksemplar
-    FROM item AS i 
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-),
-HitungJudul AS (
-    SELECT 
-    COUNT(1) AS TotalJudul
-    FROM biblio AS b 
-    WHERE b.biblio_id IN (
-        SELECT DISTINCT i.biblio_id
-        FROM item AS i
-    )
-)
 SELECT
     'Peminjaman' AS Indikator
-    , (SELECT TotalPinjaman FROM HitungPinjaman) AS Total
-    , (SELECT TotalEksemplar FROM HitungEksemplar) AS TotalEksemplar
-    , ROUND(((SELECT TotalPinjaman FROM HitungPinjaman)/
-        (SELECT TotalEksemplar FROM HitungEksemplar)), 2) AS NilaiThdEksemplar
-    , (SELECT TotalJudul FROM HitungJudul) AS TotalJudul
-    , ROUND(((SELECT TotalPinjaman FROM HitungPinjaman)/
-        (SELECT TotalJudul FROM HitungJudul)), 2) AS NilaiThdJudul
+    , hp.TotalPinjaman AS Total
+    , he.TotalEksemplar AS TotalEksemplar
+    , ROUND((hp.TotalPinjaman / he.TotalEksemplar), 2) AS NilaiThdEksemplar
+    , hj.TotalJudul AS TotalJudul
+    , ROUND((hp.TotalPinjaman / hj.TotalJudul), 2) AS NilaiThdJudul
+FROM 
+    (SELECT COUNT(1) AS TotalPinjaman
+     FROM loan AS l 
+     INNER JOIN item AS i ON l.item_code=i.item_code
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
+     WHERE l.loan_date LIKE ?) AS hp
+CROSS JOIN
+    (SELECT COUNT(1) AS TotalEksemplar
+     FROM item AS i 
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id) AS he
+CROSS JOIN
+    (SELECT COUNT(1) AS TotalJudul
+     FROM biblio AS b 
+     WHERE b.biblio_id IN (
+         SELECT DISTINCT i.biblio_id
+         FROM item AS i
+     )) AS hj
 UNION ALL
 SELECT
     'Perpanjangan' AS Indikator
-    , (SELECT TotalPerpanjangan FROM HitungPerpanjangan) AS Total
-    , (SELECT TotalEksemplar FROM HitungEksemplar) AS TotalEksemplar
-    , ROUND(((SELECT TotalPerpanjangan FROM HitungPerpanjangan)/
-        (SELECT TotalEksemplar FROM HitungEksemplar)), 2) AS NilaiThdEksemplar
-    , (SELECT TotalJudul FROM HitungJudul) AS TotalJudul
-    , ROUND(((SELECT TotalPerpanjangan FROM HitungPerpanjangan)/
-        (SELECT TotalJudul FROM HitungJudul)), 2) AS NilaiThdJudul
+    , hpr.TotalPerpanjangan AS Total
+    , he.TotalEksemplar AS TotalEksemplar
+    , ROUND((hpr.TotalPerpanjangan / he.TotalEksemplar), 2) AS NilaiThdEksemplar
+    , hj.TotalJudul AS TotalJudul
+    , ROUND((hpr.TotalPerpanjangan / hj.TotalJudul), 2) AS NilaiThdJudul
+FROM 
+    (SELECT COUNT(1) AS TotalPerpanjangan
+     FROM loan AS l 
+     INNER JOIN item AS i ON l.item_code=i.item_code
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
+     WHERE l.loan_date LIKE ?
+         AND l.renewed > 0) AS hpr
+CROSS JOIN
+    (SELECT COUNT(1) AS TotalEksemplar
+     FROM item AS i 
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id) AS he
+CROSS JOIN
+    (SELECT COUNT(1) AS TotalJudul
+     FROM biblio AS b 
+     WHERE b.biblio_id IN (
+         SELECT DISTINCT i.biblio_id
+         FROM item AS i
+     )) AS hj
 SQL;
 }
 
@@ -920,63 +909,51 @@ $end_date = $tahun . '-12-31';
 
 if (!$include_renewal) {
     if (!$only_active_members) {
-        // Semua anggota terdaftar
+        // Semua anggota terdaftar (MySQL 5.6 compatible)
         $sql_b212 = <<<SQL
-WITH 
-HitungPinjaman AS (
-    SELECT 
-        COUNT(1) AS TotalPinjaman
-    FROM loan AS l 
-    INNER JOIN item AS i ON l.item_code=i.item_code
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-    WHERE l.loan_date LIKE ?
-),
-HitungPopulasi AS (
-    SELECT 
-    COUNT(1) AS TotalPopulasi
-    FROM member AS m 
-    INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
-    WHERE 
-        m.member_since_date < ?
-        AND expire_date > ?
-)
 SELECT 
     'Peminjaman' AS Indikator
-    , (SELECT TotalPinjaman FROM HitungPinjaman) AS TotalPinjaman
-    , (SELECT TotalPopulasi FROM HitungPopulasi) AS TotalPopulasi
-    , ROUND(((SELECT TotalPinjaman FROM HitungPinjaman)/(SELECT TotalPopulasi FROM HitungPopulasi)), 2) AS Nilai
+    , hp.TotalPinjaman AS TotalPinjaman
+    , hpo.TotalPopulasi AS TotalPopulasi
+    , ROUND((hp.TotalPinjaman / hpo.TotalPopulasi), 2) AS Nilai
+FROM 
+    (SELECT COUNT(1) AS TotalPinjaman
+     FROM loan AS l 
+     INNER JOIN item AS i ON l.item_code=i.item_code
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
+     WHERE l.loan_date LIKE ?) AS hp
+CROSS JOIN
+    (SELECT COUNT(1) AS TotalPopulasi
+     FROM member AS m 
+     INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
+     WHERE m.member_since_date < ?
+         AND expire_date > ?) AS hpo
 SQL;
         $stmt_b212 = $dbs->prepare($sql_b212);
         $prev_year_end = ($tahun - 1) . '-12-31';
         $stmt_b212->bind_param('sss', $tahun_pattern, $start_date, $prev_year_end);
     } else {
-        // Hanya anggota yang pernah meminjam
+        // Hanya anggota yang pernah meminjam (MySQL 5.6 compatible)
         $sql_b212 = <<<SQL
-WITH 
-HitungPinjaman AS (
-    SELECT 
-        COUNT(1) AS TotalPinjaman
-    FROM loan AS l 
-    INNER JOIN item AS i ON l.item_code=i.item_code
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-    WHERE l.loan_date LIKE ?
-),
-HitungPopulasi AS (
-    SELECT 
-        COUNT(DISTINCT m.member_id) AS TotalPopulasi
-    FROM member AS m 
-    INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
-    INNER JOIN loan AS l ON m.member_id=l.member_id
-    WHERE 
-        m.member_since_date < ?
-        AND m.expire_date > ?
-        AND l.loan_date LIKE ?
-)
 SELECT 
     'Peminjaman' AS Indikator
-    , (SELECT TotalPinjaman FROM HitungPinjaman) AS TotalPinjaman
-    , (SELECT TotalPopulasi FROM HitungPopulasi) AS TotalPopulasi
-    , ROUND(((SELECT TotalPinjaman FROM HitungPinjaman)/(SELECT TotalPopulasi FROM HitungPopulasi)), 2) AS Nilai
+    , hp.TotalPinjaman AS TotalPinjaman
+    , hpo.TotalPopulasi AS TotalPopulasi
+    , ROUND((hp.TotalPinjaman / hpo.TotalPopulasi), 2) AS Nilai
+FROM 
+    (SELECT COUNT(1) AS TotalPinjaman
+     FROM loan AS l 
+     INNER JOIN item AS i ON l.item_code=i.item_code
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
+     WHERE l.loan_date LIKE ?) AS hp
+CROSS JOIN
+    (SELECT COUNT(DISTINCT m.member_id) AS TotalPopulasi
+     FROM member AS m 
+     INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
+     INNER JOIN loan AS l ON m.member_id=l.member_id
+     WHERE m.member_since_date < ?
+         AND m.expire_date > ?
+         AND l.loan_date LIKE ?) AS hpo
 SQL;
         $stmt_b212 = $dbs->prepare($sql_b212);
         $prev_year_end = ($tahun - 1) . '-12-31';
@@ -984,97 +961,95 @@ SQL;
     }
 } else {
     if (!$only_active_members) {
-        // Semua anggota terdaftar (dengan perpanjangan)
+        // Semua anggota terdaftar dengan perpanjangan (MySQL 5.6 compatible)
         $sql_b212 = <<<SQL
-WITH 
-HitungPerpanjangan AS (
-    SELECT 
-        COUNT(1) AS TotalPerpanjangan
-    FROM loan AS l 
-    INNER JOIN item AS i ON l.item_code=i.item_code
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-    WHERE l.loan_date LIKE ?
-        AND l.renewed > 0
-),
-HitungPinjaman AS (
-    SELECT 
-        COUNT(1) AS TotalPinjaman
-    FROM loan AS l 
-    INNER JOIN item AS i ON l.item_code=i.item_code
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-    WHERE l.loan_date LIKE ?
-),
-HitungPopulasi AS (
-    SELECT 
-    COUNT(1) AS TotalPopulasi
-    FROM member AS m 
-    INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
-    WHERE 
-        m.member_since_date < ?
-        AND expire_date > ?
-)
 SELECT 
     'Peminjaman' AS Indikator
-    , (SELECT TotalPinjaman FROM HitungPinjaman) AS TotalPinjaman
-    , (SELECT TotalPopulasi FROM HitungPopulasi) AS TotalPopulasi
-    , ROUND(((SELECT TotalPinjaman FROM HitungPinjaman)/(SELECT TotalPopulasi FROM HitungPopulasi)), 2) AS Nilai
+    , hp.TotalPinjaman AS TotalPinjaman
+    , hpo.TotalPopulasi AS TotalPopulasi
+    , ROUND((hp.TotalPinjaman / hpo.TotalPopulasi), 2) AS Nilai
+FROM 
+    (SELECT COUNT(1) AS TotalPinjaman
+     FROM loan AS l 
+     INNER JOIN item AS i ON l.item_code=i.item_code
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
+     WHERE l.loan_date LIKE ?) AS hp
+CROSS JOIN
+    (SELECT COUNT(1) AS TotalPopulasi
+     FROM member AS m 
+     INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
+     WHERE m.member_since_date < ?
+         AND expire_date > ?) AS hpo
 UNION ALL
 SELECT 
     'Perpanjangan' AS Indikator
-    , (SELECT TotalPerpanjangan FROM HitungPerpanjangan) AS TotalPerpanjangan
-    , (SELECT TotalPopulasi FROM HitungPopulasi) AS TotalPopulasi
-    , ROUND(((SELECT TotalPerpanjangan FROM HitungPerpanjangan)/(SELECT TotalPopulasi FROM HitungPopulasi)), 2) AS Nilai
+    , hpr.TotalPerpanjangan AS TotalPinjaman
+    , hpo.TotalPopulasi AS TotalPopulasi
+    , ROUND((hpr.TotalPerpanjangan / hpo.TotalPopulasi), 2) AS Nilai
+FROM 
+    (SELECT COUNT(1) AS TotalPerpanjangan
+     FROM loan AS l 
+     INNER JOIN item AS i ON l.item_code=i.item_code
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
+     WHERE l.loan_date LIKE ?
+         AND l.renewed > 0) AS hpr
+CROSS JOIN
+    (SELECT COUNT(1) AS TotalPopulasi
+     FROM member AS m 
+     INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
+     WHERE m.member_since_date < ?
+         AND expire_date > ?) AS hpo
 SQL;
         $stmt_b212 = $dbs->prepare($sql_b212);
         $prev_year_end = ($tahun - 1) . '-12-31';
-        $stmt_b212->bind_param('ssss', $tahun_pattern, $tahun_pattern, $start_date, $prev_year_end);
+        $stmt_b212->bind_param('sssss', $tahun_pattern, $start_date, $prev_year_end, $tahun_pattern, $start_date, $prev_year_end);
     } else {
-        // Hanya anggota yang pernah meminjam (dengan perpanjangan)
+        // Hanya anggota yang pernah meminjam dengan perpanjangan (MySQL 5.6 compatible)
         $sql_b212 = <<<SQL
-WITH 
-HitungPerpanjangan AS (
-    SELECT 
-        COUNT(1) AS TotalPerpanjangan
-    FROM loan AS l 
-    INNER JOIN item AS i ON l.item_code=i.item_code
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-    WHERE l.loan_date LIKE ?
-        AND l.renewed > 0
-),
-HitungPinjaman AS (
-    SELECT 
-        COUNT(1) AS TotalPinjaman
-    FROM loan AS l 
-    INNER JOIN item AS i ON l.item_code=i.item_code
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-    WHERE l.loan_date LIKE ?
-),
-HitungPopulasi AS (
-    SELECT 
-        COUNT(DISTINCT m.member_id) AS TotalPopulasi
-    FROM member AS m 
-    INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
-    INNER JOIN loan AS l ON m.member_id=l.member_id
-    WHERE 
-        m.member_since_date < ?
-        AND m.expire_date > ?
-        AND l.loan_date LIKE ?
-)
 SELECT 
     'Peminjaman' AS Indikator
-    , (SELECT TotalPinjaman FROM HitungPinjaman) AS TotalPinjaman
-    , (SELECT TotalPopulasi FROM HitungPopulasi) AS TotalPopulasi
-    , ROUND(((SELECT TotalPinjaman FROM HitungPinjaman)/(SELECT TotalPopulasi FROM HitungPopulasi)), 2) AS Nilai
+    , hp.TotalPinjaman AS TotalPinjaman
+    , hpo.TotalPopulasi AS TotalPopulasi
+    , ROUND((hp.TotalPinjaman / hpo.TotalPopulasi), 2) AS Nilai
+FROM 
+    (SELECT COUNT(1) AS TotalPinjaman
+     FROM loan AS l 
+     INNER JOIN item AS i ON l.item_code=i.item_code
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
+     WHERE l.loan_date LIKE ?) AS hp
+CROSS JOIN
+    (SELECT COUNT(DISTINCT m.member_id) AS TotalPopulasi
+     FROM member AS m 
+     INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
+     INNER JOIN loan AS l ON m.member_id=l.member_id
+     WHERE m.member_since_date < ?
+         AND m.expire_date > ?
+         AND l.loan_date LIKE ?) AS hpo
 UNION ALL
 SELECT 
     'Perpanjangan' AS Indikator
-    , (SELECT TotalPerpanjangan FROM HitungPerpanjangan) AS TotalPerpanjangan
-    , (SELECT TotalPopulasi FROM HitungPopulasi) AS TotalPopulasi
-    , ROUND(((SELECT TotalPerpanjangan FROM HitungPerpanjangan)/(SELECT TotalPopulasi FROM HitungPopulasi)), 2) AS Nilai
+    , hpr.TotalPerpanjangan AS TotalPinjaman
+    , hpo.TotalPopulasi AS TotalPopulasi
+    , ROUND((hpr.TotalPerpanjangan / hpo.TotalPopulasi), 2) AS Nilai
+FROM 
+    (SELECT COUNT(1) AS TotalPerpanjangan
+     FROM loan AS l 
+     INNER JOIN item AS i ON l.item_code=i.item_code
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
+     WHERE l.loan_date LIKE ?
+         AND l.renewed > 0) AS hpr
+CROSS JOIN
+    (SELECT COUNT(DISTINCT m.member_id) AS TotalPopulasi
+     FROM member AS m 
+     INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
+     INNER JOIN loan AS l ON m.member_id=l.member_id
+     WHERE m.member_since_date < ?
+         AND m.expire_date > ?
+         AND l.loan_date LIKE ?) AS hpo
 SQL;
         $stmt_b212 = $dbs->prepare($sql_b212);
         $prev_year_end = ($tahun - 1) . '-12-31';
-        $stmt_b212->bind_param('sssss', $tahun_pattern, $tahun_pattern, $start_date, $prev_year_end, $tahun_pattern);
+        $stmt_b212->bind_param('sssssss', $tahun_pattern, $start_date, $prev_year_end, $tahun_pattern, $tahun_pattern, $start_date, $prev_year_end, $tahun_pattern);
     }
 }
 
@@ -1182,36 +1157,27 @@ echo 'Indikator ini menilai jumlah koleksi yang tidak digunakan dan kesesuaian p
 echo '</div>';
 
 $sql_b213 = <<<SQL
-WITH 
-DaftarPinjaman AS (
-    SELECT DISTINCT(l.item_code) AS item_code
-    FROM loan AS l
-    INNER JOIN item AS i ON l.item_code=i.item_code
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-    WHERE l.loan_date LIKE ?
-),
-HitungTidakDipinjam AS (
-    SELECT 
-        COUNT(1) AS TotalTidakDipinjaman
-    FROM item AS i 
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-    WHERE i.item_code NOT IN (
-        SELECT item_code FROM DaftarPinjaman
-    )
-        AND b.input_date < ?
-),
-HitungEksemplar AS (
-    SELECT 
-    COUNT(1) AS TotalEksemplar
-    FROM item AS i 
-    INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
-)
 SELECT
     'Tidak Dipinjam' AS Indikator
-    , (SELECT TotalTidakDipinjaman FROM HitungTidakDipinjam) AS Total
-    , (SELECT TotalEksemplar FROM HitungEksemplar) AS TotalEksemplar
-    , ROUND(((SELECT TotalTidakDipinjaman FROM HitungTidakDipinjam)/
-        (SELECT TotalEksemplar FROM HitungEksemplar))*100, 2) AS Persentase
+    , htd.TotalTidakDipinjaman AS Total
+    , he.TotalEksemplar AS TotalEksemplar
+    , ROUND((htd.TotalTidakDipinjaman / he.TotalEksemplar) * 100, 2) AS Persentase
+FROM 
+    (SELECT COUNT(1) AS TotalTidakDipinjaman
+     FROM item AS i 
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id
+     WHERE i.item_code NOT IN (
+         SELECT DISTINCT l.item_code
+         FROM loan AS l
+         INNER JOIN item AS i2 ON l.item_code=i2.item_code
+         INNER JOIN biblio AS b2 ON i2.biblio_id=b2.biblio_id
+         WHERE l.loan_date LIKE ?
+     )
+         AND b.input_date < ?) AS htd
+CROSS JOIN
+    (SELECT COUNT(1) AS TotalEksemplar
+     FROM item AS i 
+     INNER JOIN biblio AS b ON i.biblio_id=b.biblio_id) AS he
 SQL;
 
 $stmt_b213 = $dbs->prepare($sql_b213);
@@ -1292,59 +1258,47 @@ echo 'Indikator ini menilai keberhasilan perpustakaan dalam menarik pemustaka me
 echo '</div>';
 
 if (!$only_active_members) {
-    // Semua anggota terdaftar
+    // Semua anggota terdaftar (MySQL 5.6 compatible)
     $sql_b221 = <<<SQL
-WITH 
-HitungKunjungan AS (
-    SELECT 
-        COUNT(1) AS TotalKunjungan
-    FROM visitor_count AS vc 
-    WHERE vc.checkin_date LIKE ?
-),
-HitungPopulasi AS (
-    SELECT 
-    COUNT(1) AS TotalPopulasi
-    FROM member AS m 
-    INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
-    WHERE 
-        m.member_since_date < ?
-        AND expire_date > ?
-)
 SELECT 
     'Kunjungan' AS Indikator
-    , (SELECT TotalKunjungan FROM HitungKunjungan) AS TotalKunjungan
-    , (SELECT TotalPopulasi FROM HitungPopulasi) AS TotalPopulasi
-    , ROUND(((SELECT TotalKunjungan FROM HitungKunjungan)/(SELECT TotalPopulasi FROM HitungPopulasi)), 2) AS Nilai
+    , hk.TotalKunjungan AS TotalKunjungan
+    , hpo.TotalPopulasi AS TotalPopulasi
+    , ROUND((hk.TotalKunjungan / hpo.TotalPopulasi), 2) AS Nilai
+FROM 
+    (SELECT COUNT(1) AS TotalKunjungan
+     FROM visitor_count AS vc 
+     WHERE vc.checkin_date LIKE ?) AS hk
+CROSS JOIN
+    (SELECT COUNT(1) AS TotalPopulasi
+     FROM member AS m 
+     INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
+     WHERE m.member_since_date < ?
+         AND expire_date > ?) AS hpo
 SQL;
     $stmt_b221 = $dbs->prepare($sql_b221);
     $prev_year_end = ($tahun - 1) . '-12-31';
     $stmt_b221->bind_param('sss', $tahun_pattern, $start_date, $prev_year_end);
 } else {
-    // Hanya anggota yang pernah berkunjung
+    // Hanya anggota yang pernah berkunjung (MySQL 5.6 compatible)
     $sql_b221 = <<<SQL
-WITH 
-HitungKunjungan AS (
-    SELECT 
-        COUNT(1) AS TotalKunjungan
-    FROM visitor_count AS vc 
-    WHERE vc.checkin_date LIKE ?
-),
-HitungPopulasi AS (
-    SELECT 
-        COUNT(DISTINCT m.member_id) AS TotalPopulasi
-    FROM member AS m 
-    INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
-    INNER JOIN visitor_count AS vc ON m.member_id=vc.member_id
-    WHERE 
-        m.member_since_date < ?
-        AND m.expire_date > ?
-        AND vc.checkin_date LIKE ?
-)
 SELECT 
     'Kunjungan' AS Indikator
-    , (SELECT TotalKunjungan FROM HitungKunjungan) AS TotalKunjungan
-    , (SELECT TotalPopulasi FROM HitungPopulasi) AS TotalPopulasi
-    , ROUND(((SELECT TotalKunjungan FROM HitungKunjungan)/(SELECT TotalPopulasi FROM HitungPopulasi)), 2) AS Nilai
+    , hk.TotalKunjungan AS TotalKunjungan
+    , hpo.TotalPopulasi AS TotalPopulasi
+    , ROUND((hk.TotalKunjungan / hpo.TotalPopulasi), 2) AS Nilai
+FROM 
+    (SELECT COUNT(1) AS TotalKunjungan
+     FROM visitor_count AS vc 
+     WHERE vc.checkin_date LIKE ?) AS hk
+CROSS JOIN
+    (SELECT COUNT(DISTINCT m.member_id) AS TotalPopulasi
+     FROM member AS m 
+     INNER JOIN mst_member_type AS mt ON m.member_type_id=mt.member_type_id
+     INNER JOIN visitor_count AS vc ON m.member_id=vc.member_id
+     WHERE m.member_since_date < ?
+         AND m.expire_date > ?
+         AND vc.checkin_date LIKE ?) AS hpo
 SQL;
     $stmt_b221 = $dbs->prepare($sql_b221);
     $prev_year_end = ($tahun - 1) . '-12-31';
