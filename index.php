@@ -540,7 +540,7 @@ SQL;
                     echo '<h4>📈 Nilai Per Kapita</h4>';
                     echo '<div class="comparison-grid">';
                     foreach ($data_b212 as $item) {
-                        $nilai = $item['Nilai'];
+                        $nilai = ceil($item['Nilai']);
 
                         // Use neutral blue color scheme for all values
                         $badge_color = '#3b82f6';
@@ -757,7 +757,7 @@ SQL;
                     echo '</div>';
                     echo '<div class="comparison-item">';
                     echo '<div class="comparison-label">Kunjungan Per Kapita</div>';
-                    echo '<div class="comparison-value" style="color: #10b981;">' . number_format($data_b221['Nilai'], 2, ',', '.') . '</div>';
+                    echo '<div class="comparison-value" style="color: #10b981;">' . number_format(ceil($data_b221['Nilai']), 2, ',', '.') . '</div>';
                     echo '</div>';
                     echo '</div>';
 
@@ -783,7 +783,7 @@ SQL;
                     echo '</div></div>';
 
                     // Per capita card - neutral design without negative labeling
-                    $nilai_kunjungan = $data_b221['Nilai'];
+                    $nilai_kunjungan = ceil($data_b221['Nilai']);
 
                     // Use neutral color scheme for all values
                     $badge_color_visit = '#3b82f6';
@@ -793,11 +793,11 @@ SQL;
                     echo '<h4>📊 Rasio Kunjungan Per Kapita</h4>';
                     echo '<div style="text-align: center; padding: 30px; background: ' . $bg_color_visit . '; border: 2px solid ' . $badge_color_visit . '20; border-radius: 8px;">';
                     echo '<div style="font-size: 14px; color: #666; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Kunjungan Per Kapita</div>';
-                    echo '<div style="font-size: 72px; font-weight: bold; color: ' . $badge_color_visit . '; line-height: 1; margin: 15px 0;">' . number_format($nilai_kunjungan, 2, ',', '.') . '</div>';
+                    echo '<div style="font-size: 72px; font-weight: bold; color: ' . $badge_color_visit . '; line-height: 1; margin: 15px 0;">' . number_format(ceil($nilai_kunjungan), 2, ',', '.') . '</div>';
                     echo '<div style="margin: 15px 0;">';
                     echo '<span style="display: inline-block; padding: 6px 16px; background: ' . $badge_color_visit . '; color: white; border-radius: 16px; font-size: 14px; font-weight: 600;">per kapita</span>';
                     echo '</div>';
-                    echo '<div style="margin-top: 15px; font-size: 14px; color: #666; line-height: 1.5;">Rata-rata setiap anggota berkunjung <strong>' . number_format($nilai_kunjungan, 2, ',', '.') . ' kali</strong> dalam setahun</div>';
+                    echo '<div style="margin-top: 15px; font-size: 14px; color: #666; line-height: 1.5;">Rata-rata setiap anggota berkunjung <strong>' . number_format(ceil($nilai_kunjungan), 2, ',', '.') . ' kali</strong> dalam setahun</div>';
                     echo '</div></div>';
                     echo '</div>';
                 }
