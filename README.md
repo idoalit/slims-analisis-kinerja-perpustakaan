@@ -2,7 +2,10 @@
 
 Plugin untuk menganalisis kinerja perpustakaan berdasarkan **Pedoman Analisis Kinerja Perpustakaan Indonesia (PAKPI) 2021** dan standar **SNI ISO 2789:2013**.
 
----
+
+## 🛠️ Instalasi & Pemasangan
+
+Panduan lengkap untuk memasang plugin ini dapat ditemukan pada tautan berikut: ➡️ [Panduan Pemasangan Plugin SLiMS](https://github.com/adeism/belajarslims/blob/main/belajar-pasang-plugin.md)
 
 ## � Filter dan Opsi
 
