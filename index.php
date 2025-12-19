@@ -870,7 +870,7 @@ if ($result_b211->num_rows > 0) {
         // Info box: Rasio Eksemplar per Judul
         $eksemplar = $data_b211[0]['TotalEksemplar'];
         $judul = $data_b211[0]['TotalJudul'];
-        $rasio = $judul > 0 ? round($eksemplar / $judul, 2) : 0;
+        $rasio = $judul > 0 ? floor($eksemplar / $judul) : 0;
         
         echo '<div class="chart-box">';
         echo '<h4>📚 Statistik Koleksi</h4>';
@@ -1049,7 +1049,7 @@ CROSS JOIN
 SQL;
         $stmt_b212 = $dbs->prepare($sql_b212);
         $prev_year_end = ($tahun - 1) . '-12-31';
-        $stmt_b212->bind_param('sssssss', $tahun_pattern, $start_date, $prev_year_end, $tahun_pattern, $tahun_pattern, $start_date, $prev_year_end, $tahun_pattern);
+        $stmt_b212->bind_param('ssssssss', $tahun_pattern, $start_date, $prev_year_end, $tahun_pattern, $tahun_pattern, $start_date, $prev_year_end, $tahun_pattern);
     }
 }
 
